@@ -1,0 +1,75 @@
+{
+  "name": "Test-Laptop-Vagrant",
+  "override_attributes": {
+    "cos": {
+      "os": "centos-7.1",
+      "use_bootstrap_v2": true,
+      "vagrant": {
+        "nat_ip": "10.0.2.16"
+      },
+      "virt_type" : "qemu",
+      "enabled": {
+        "logging": true,
+        "monitoring": true,
+        "metrics": true,
+        "dns": true,
+        "secure_fixed_networks" : false
+      },
+      "ceph": {
+        "version": "0.94.2-0.el7.centos",
+        "repo": {
+            "os": "el7"
+        },
+        "pgp_auto_adjust" : true,
+        "hdd_disks" : [ "sdb", "sdc" ],
+        "ssd_disks" : [ "sdd", "sde" ],
+        "chooseleaf" : "host"
+      },
+      "domain_name" : "ceph.example.com",
+      "management": {
+        "vip" : "10.0.101.5",
+        "interface" : "enp0s8",
+        "netmask" : "255.255.255.0",
+        "cidr" : "10.0.101.0/24",
+        "gateway" : "10.0.101.3"
+      },
+      "storage-backend": {
+        "interface" : "enp0s9",
+        "netmask" : "255.255.255.0",
+        "cidr" : "172.16.101.0/24",
+        "gateway" : "172.16.101.3"
+      },
+      "storage-frontend": {
+        "vip" : "192.168.101.5",
+        "interface" : "enp0s10",
+        "netmask" : "255.255.255.0",
+        "cidr" : "192.168.101.0/24",
+        "gateway" : "192.168.101.3",
+        "available_subnet" : "192.168.101.128/25"
+      },
+      "bootstrap": {
+        "interface" : "enp0s3",
+        "pxe_interface" : "enp0s8",
+        "server" : "10.0.101.3",
+        "dhcp_subnet" : "10.0.101.0",
+        "dhcp_range" : "10.0.101.14 10.0.101.250"
+      },
+      "dns_servers" : [ "8.8.8.8", "8.8.4.4" ]
+    },
+    "ntp": {
+      "servers" : [ "0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org" ]
+    },
+    "chef_client": {
+      "server_url": "http://10.0.101.3:4000",
+      "cache_path": "/var/chef/cache",
+      "backup_path": "/var/chef/backup",
+      "validation_client_name": "chef-validator",
+      "run_path": "/var/chef"
+    }
+  },
+  "json_class": "Chef::Environment",
+  "description": "Laptop test environment",
+  "cookbook_versions": {
+  },
+  "chef_type": "environment"
+}
