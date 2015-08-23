@@ -1,5 +1,5 @@
 #
-# Cookbook Name:: ceph-helpers
+# Cookbook Name:: ceph-chef
 # Library:: utils
 #
 # Copyright 2015, Bloomberg Finance L.P.
@@ -23,8 +23,8 @@ require 'thread'
 require 'ipaddr'
 
 def is_vip?
-    ipaddr = `ip addr show dev #{node['ceph-helpers']['management']['interface']}`
-    return ipaddr.include? node['ceph-helpers']['management']['vip']
+    ipaddr = `ip addr show dev #{node['ceph-chef']['management']['interface']}`
+    return ipaddr.include? node['ceph-chef']['management']['vip']
 end
 
 def init_config
@@ -36,14 +36,14 @@ def init_config
     end rescue nil
     begin
         $dbi = Chef::DataBagItem.load('configs', node.chef_environment)
-        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-helpers']['enabled']['encrypt_data_bag']
+        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-chef']['enabled']['encrypt_data_bag']
         Chef::Log.info("============ Loaded existing data_bag_item \"configs/#{node.chef_environment}\"")
     rescue
         $dbi = Chef::DataBagItem.new
         $dbi.data_bag('configs')
         $dbi.raw_data = { 'id' => node.chef_environment }
         $dbi.save
-        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-helpers']['enabled']['encrypt_data_bag']
+        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-chef']['enabled']['encrypt_data_bag']
         Chef::Log.info("++++++++++++ Created new data_bag_item \"configs/#{node.chef_environment}\"")
     end
 end
@@ -51,28 +51,28 @@ end
 def make_config(key, value)
     init_config if $dbi.nil?
     if $dbi[key].nil?
-        $dbi[key] = (node['ceph-helpers']['enabled']['encrypt_data_bag']) ? Chef::EncryptedDataBagItem.encrypt_value(value, Chef::EncryptedDataBagItem.load_secret) : value
+        $dbi[key] = (node['ceph-chef']['enabled']['encrypt_data_bag']) ? Chef::EncryptedDataBagItem.encrypt_value(value, Chef::EncryptedDataBagItem.load_secret) : value
         $dbi.save
-        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-helpers']['enabled']['encrypt_data_bag']
+        $edbi = Chef::EncryptedDataBagItem.load('configs', node.chef_environment) if node['ceph-chef']['enabled']['encrypt_data_bag']
         Chef::Log.info("++++++++++++ Creating new item with key \"#{key}\"")
         return value
     else
         Chef::Log.info("============ Loaded existing item with key \"#{key}\"")
-        return (node['ceph-helpers']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
+        return (node['ceph-chef']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
     end
 end
 
 def config_defined(key)
     init_config if $dbi.nil?
     Chef::Log.info("------------ Checking if key \"#{key}\" is defined")
-    result = (node['ceph-helpers']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
+    result = (node['ceph-chef']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
     return !result.nil?
 end
 
 def get_config(key)
     init_config if $dbi.nil?
     Chef::Log.info("------------ Fetching value for key \"#{key}\"")
-    result = (node['ceph-helpers']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
+    result = (node['ceph-chef']['enabled']['encrypt_data_bag']) ? $edbi[key] : $dbi[key]
     raise "No config found for get_config(#{key})!!!" if result.nil?
     return result
 end

@@ -1,7 +1,7 @@
 #
 # Author:: Chris Jones <cjones303@bloomberg.net>
-# Cookbook Name:: ceph-helpers
-# Recipe:: cobbler
+# Cookbook Name:: ceph-chef
+# Recipe:: ceph-mon
 #
 # Copyright 2015, Bloomberg Finance L.P.
 #

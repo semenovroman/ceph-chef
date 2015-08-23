@@ -21,8 +21,8 @@
             "os": "el7"
         },
         "pgp_auto_adjust" : true,
-        "hdd_disks" : [ "sdb", "sdc" ],
-        "ssd_disks" : [ "sdd", "sde" ],
+        "osd_hdd_devices" : [{"device": "sdb"},{"device": "sdc"}],
+        "osd_ssd_devices" : [{"device": "sdd"}, {"device": "sde"}],
         "chooseleaf" : "host"
       },
       "domain_name" : "ceph.example.com",
