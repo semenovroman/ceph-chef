@@ -1,53 +1,3 @@
-v4.3.1 (2015-07-12)
--------------------
-- [#320] don't crash if handler class isn't available
-- [#318] default value for password for windows task should be nil
-- [#317] properly quote log_location to avoid regex corner case issue
-- [#314] fully replace root_group with node['root_group']
-- [#310] revert #267; prohibit clients from dictating their environments
-- [#307] fix delete_validation recipe under chef-zero
-- [#235] workaround chef/chef#3432
-
-v4.3.0 (2015-04-14)
--------------------
-- [#303] cron ignores daemon_options
-- [#297] support prerotate options in logrotate
-- [#296] Support adding audit_mode as configuration in client.rb
-- [#295] Add support for specifying gem source for config
-- [#294] Cleanup opscode-named plist and service on OS X
-- [#291] Pass $OPTIONS to systemd service
-- [#289] Use systemd on Debian 8 (jessie)
-- [#286] Remove legacy logic for handling Chef Server
-- [#283] Update plist filename for new company
-- [#278] Fix path on SmartOS
-- [#277] Update contributing documentation
-- [#275] Correct logrotate postrotate command for upstart init_style
-- [#273] Fix punctuation, capitalization and wording in readme
-- [#272] Fix readme quoting
-- [#271] Add internal heading links to documentation
-- [#270] Fix Travis CI build
-- [#262] Allow client.rb to contain environment
-- [#257] Change log directory mode 0755
-- [#254] Remove rbconfig
-- [#156] Allow cron to have a weekday parameter
-
-v4.2.4 (2015-02-18)
--------------------
-- Ripping out chef_gem compile_time stuff
-
-v4.2.3 (2015-02-18)
--------------------
-- Fixing chef_gem with Chef::Resource::ChefGem.method_defined?(:compile_time)
-
-v4.2.2 (2015-02-18)
--------------------
-- Fixing chef_gem for Chef below 12.1.0
-
-v4.2.1 (2015-02-17)
--------------------
-- Being explicit about usage of the chef_gem's compile_time property.
-- Eliminating future deprecation warnings in Chef 12.1.0.
-
 v4.2.0 (2015-02-08)
 -------------------
 - [#252] Fix ordering problem with logrotate command attribute
@@ -150,18 +100,18 @@ Fixing merge conflict in launchd_service
 v3.3.0 (2014-02-25)
 -------------------
 ### Bug
-- **[COOK-4286](https://tickets.chef.io/browse/COOK-4286)** - Cleanup the Kitchen
-- **[COOK-4242](https://tickets.chef.io/browse/COOK-4242)** - Add Fedora 19 support to chef-client::cron
-- **[COOK-4151](https://tickets.chef.io/browse/COOK-4151)** - Runit should set locale
-- **[COOK-4127](https://tickets.chef.io/browse/COOK-4127)** - add mailto support for cron runs
-- **[COOK-4038](https://tickets.chef.io/browse/COOK-4038)** - Don't define CHEF_SERVER_USER constant if already defined
+- **[COOK-4286](https://tickets.opscode.com/browse/COOK-4286)** - Cleanup the Kitchen
+- **[COOK-4242](https://tickets.opscode.com/browse/COOK-4242)** - Add Fedora 19 support to chef-client::cron
+- **[COOK-4151](https://tickets.opscode.com/browse/COOK-4151)** - Runit should set locale
+- **[COOK-4127](https://tickets.opscode.com/browse/COOK-4127)** - add mailto support for cron runs
+- **[COOK-4038](https://tickets.opscode.com/browse/COOK-4038)** - Don't define CHEF_SERVER_USER constant if already defined
 
 ### New Feature
-- **[COOK-4169](https://tickets.chef.io/browse/COOK-4169)** - Add the possibility to specify "options" for the required-gems installation procedure in the chef-client cookbook
+- **[COOK-4169](https://tickets.opscode.com/browse/COOK-4169)** - Add the possibility to specify "options" for the required-gems installation procedure in the chef-client cookbook
 
 ### Improvement
-- **[COOK-4159](https://tickets.chef.io/browse/COOK-4159)** - turn down "Found chef-client in #{client_bin}" messages to :debug level
-- **[COOK-3896](https://tickets.chef.io/browse/COOK-3896)** - launchd_service recipe should use Gem::Requirement instead of Chef::VersionConstraint
+- **[COOK-4159](https://tickets.opscode.com/browse/COOK-4159)** - turn down "Found chef-client in #{client_bin}" messages to :debug level
+- **[COOK-3896](https://tickets.opscode.com/browse/COOK-3896)** - launchd_service recipe should use Gem::Requirement instead of Chef::VersionConstraint
 
 
 v3.2.2 (2014-01-26)
@@ -172,9 +122,9 @@ v3.2.2 (2014-01-26)
 v3.2.0
 ------
 ### Bug
-- **[COOK-3885](https://tickets.chef.io/browse/COOK-3885)** - launchd_service template missing client_bin
-- **[COOK-3874](https://tickets.chef.io/browse/COOK-3874)** - COOK-3492 patch breaks server_test.rb
-- **[COOK-3848](https://tickets.chef.io/browse/COOK-3848)** - allow disable splay
+- **[COOK-3885](https://tickets.opscode.com/browse/COOK-3885)** - launchd_service template missing client_bin
+- **[COOK-3874](https://tickets.opscode.com/browse/COOK-3874)** - COOK-3492 patch breaks server_test.rb
+- **[COOK-3848](https://tickets.opscode.com/browse/COOK-3848)** - allow disable splay
 - Fixing up style to pass most rubocops
 - Updating test-kitchen harness
 
@@ -182,31 +132,31 @@ v3.2.0
 v3.1.2
 ------
 ### Bug
-- **[COOK-4113](https://tickets.chef.io/browse/COOK-4113)** - chef-client::smf_service breaks permissions on /lib/svc/method
+- **[COOK-4113](https://tickets.opscode.com/browse/COOK-4113)** - chef-client::smf_service breaks permissions on /lib/svc/method
 
 v3.1.0
 ------
 ### Bug
-- **[COOK-3638](https://tickets.chef.io/browse/COOK-3638)** - Use standard posix shell `/bin/sh` instead of `/bin/bash`
-- **[COOK-3637](https://tickets.chef.io/browse/COOK-3637)** - Fix typo in README
-- **[COOK-3501](https://tickets.chef.io/browse/COOK-3501)** - Notify reload `:immediately` when `client.rb` template is changed
-- **[COOK-3492](https://tickets.chef.io/browse/COOK-3492)** - Test upstart on CentOS
+- **[COOK-3638](https://tickets.opscode.com/browse/COOK-3638)** - Use standard posix shell `/bin/sh` instead of `/bin/bash`
+- **[COOK-3637](https://tickets.opscode.com/browse/COOK-3637)** - Fix typo in README
+- **[COOK-3501](https://tickets.opscode.com/browse/COOK-3501)** - Notify reload `:immediately` when `client.rb` template is changed
+- **[COOK-3492](https://tickets.opscode.com/browse/COOK-3492)** - Test upstart on CentOS
 
 ### New Feature
-- **[COOK-3500](https://tickets.chef.io/browse/COOK-3500)** - Rotate logs on supported platforms if 'log_file' is set
+- **[COOK-3500](https://tickets.opscode.com/browse/COOK-3500)** - Rotate logs on supported platforms if 'log_file' is set
 
 ### Improvement
-- **[COOK-1863](https://tickets.chef.io/browse/COOK-1863)** - Install chef-client as a Windows Service
+- **[COOK-1863](https://tickets.opscode.com/browse/COOK-1863)** - Install chef-client as a Windows Service
 
 v3.0.6
 ------
 ### Bug
-- **[COOK-3373](https://tickets.chef.io/browse/COOK-3373)** - Provide full syslog custom config example in README
-- **[COOK-3301](https://tickets.chef.io/browse/COOK-3301)** - Fix MiniTest Cron Recipe
-- **[COOK-3300](https://tickets.chef.io/browse/COOK-3300)** - Allow environment variables (not require)
-- **[COOK-3276](https://tickets.chef.io/browse/COOK-3276)** - Use `node.default` instead of `node.set`
-- **[COOK-3227](https://tickets.chef.io/browse/COOK-3227)** - Fix misnamed attribute
-- **[COOK-3104](https://tickets.chef.io/browse/COOK-3104)** - Update `.kitchen.yml` to properly set environment_variables
+- **[COOK-3373](https://tickets.opscode.com/browse/COOK-3373)** - Provide full syslog custom config example in README
+- **[COOK-3301](https://tickets.opscode.com/browse/COOK-3301)** - Fix MiniTest Cron Recipe
+- **[COOK-3300](https://tickets.opscode.com/browse/COOK-3300)** - Allow environment variables (not require)
+- **[COOK-3276](https://tickets.opscode.com/browse/COOK-3276)** - Use `node.default` instead of `node.set`
+- **[COOK-3227](https://tickets.opscode.com/browse/COOK-3227)** - Fix misnamed attribute
+- **[COOK-3104](https://tickets.opscode.com/browse/COOK-3104)** - Update `.kitchen.yml` to properly set environment_variables
 
 v3.0.4
 ------

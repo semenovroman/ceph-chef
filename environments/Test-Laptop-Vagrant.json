@@ -1,7 +1,7 @@
 {
   "name": "Test-Laptop-Vagrant",
   "override_attributes": {
-    "cos": {
+    "ceph-chef": {
       "os": "centos-7.1",
       "use_bootstrap_v2": true,
       "vagrant": {
@@ -47,7 +47,7 @@
         "gateway" : "192.168.101.3",
         "available_subnet" : "192.168.101.128/25"
       },
-      "bootstrap": {
+      "ceph-chef-bootstrap": {
         "interface" : "enp0s3",
         "pxe_interface" : "enp0s8",
         "server" : "10.0.101.3",

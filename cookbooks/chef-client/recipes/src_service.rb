@@ -2,7 +2,7 @@
 # Cookbook Name:: chef-client
 # Recipe:: src_service
 #
-# Author:: Julian C. Dunn (<jdunn@chef.io>)
+# Author:: Julian C. Dunn (<jdunn@getchef.com>)
 #
 # Copyright 2014, Chef Software, Inc.
 #

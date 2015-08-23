@@ -11,8 +11,7 @@ create_directories
 dist_dir, conf_dir, env_file = value_for_platform_family(
   ["arch"] => ["arch", "chef", "arch.env"],
   ["fedora"] => ["fedora", "sysconfig", "chef-client"],
-  ["rhel"] => ["redhat", "sysconfig", "chef-client"],
-  ["debian"] => ["debian", "default", "chef-client"]
+  ["rhel"] => ["redhat", "sysconfig", "chef-client"]
 )
 
 template "/etc/systemd/system/chef-client.service" do

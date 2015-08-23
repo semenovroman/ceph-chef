@@ -1,9 +1,9 @@
 #
-# Author:: Joshua Timberman <joshua@chef.io>
+# Author:: Joshua Timberman <joshua@opscode.com>
 # Cookbook Name:: chef
 # Recipe:: delete_validation
 #
-# Copyright 2010, Chef Software, Inc
+# Copyright 2010, Opscode, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ class ::Chef::Recipe
   include ::Opscode::ChefClient::Helpers
 end
 
-unless Chef::Config[:validation_key].nil?
+unless chef_server?
   file Chef::Config[:validation_key] do
     action :delete
     backup false
