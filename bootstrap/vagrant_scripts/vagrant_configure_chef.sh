@@ -68,7 +68,7 @@ do_on_node ceph-admin-bootstrap "sudo rpm -Uvh \$(find /ceph-chef-files/ -name c
 set -e
 
 # configure knife on the bootstrap node and perform a knife bootstrap to create the bootstrap node in Chef
-do_on_node ceph-admin-bootstrap "mkdir -p \$HOME/.chef && echo -e \"chef_server_url 'https://ceph-admin-bootstrap.$BOOTSTRAP_DOMAIN/organizations/ceph'\\\nvalidation_client_name 'cos-validator'\\\nvalidation_key '/etc/opscode/ceph-validator.pem'\\\nnode_name 'admin'\\\nclient_key '/etc/opscode/admin.pem'\\\nknife['editor'] = 'vim'\\\ncookbook_path [ \\\"#{ENV['HOME']}/ceph-chef/cookbooks\\\" ]\" > \$HOME/.chef/knife.rb"
+do_on_node ceph-admin-bootstrap "mkdir -p \$HOME/.chef && echo -e \"chef_server_url 'https://ceph-admin-bootstrap.$BOOTSTRAP_DOMAIN/organizations/ceph'\\\nvalidation_client_name 'ceph-validator'\\\nvalidation_key '/etc/opscode/ceph-validator.pem'\\\nnode_name 'admin'\\\nclient_key '/etc/opscode/admin.pem'\\\nknife['editor'] = 'vim'\\\ncookbook_path [ \\\"#{ENV['HOME']}/ceph-chef/cookbooks\\\" ]\" > \$HOME/.chef/knife.rb"
 do_on_node ceph-admin-bootstrap "$KNIFE ssl fetch"
 do_on_node ceph-admin-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.3"
 
