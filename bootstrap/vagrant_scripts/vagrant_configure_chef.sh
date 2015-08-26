@@ -77,6 +77,8 @@ do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.10
 
 # Initialize VM lists
 #TODO: Maybe add these as environment variables and set them in vagrant later
+# NOTE: TODO: Clean up calls below for generic converged and non-converged settings...
+
 # Only used in non-converged architecture
 ceph_mon_vms="ceph-mon-vm1 ceph-mon-vm2 ceph-mon-vm3"
 ceph_mds_vms=""
@@ -91,9 +93,17 @@ do_on_node ceph-bootstrap "sudo /opt/opscode/embedded/bin/gem install /ceph-file
 
 # setup epel first
 do_on_node ceph-bootstrap "sudo yum install -y epel-release"
-for vm in $ceph_mon_vms $ceph_mds_vms $ceph_rgw_vms $ceph_osd_vms; do
-  do_on_node $vm "sudo yum install -y epel-release"
-done
+
+if [[ CEPH_ARCHITECTURE != "converged" ]]; then
+    # Only for non-converged architecture
+    for vm in $ceph_mon_vms $ceph_mds_vms $ceph_rgw_vms $ceph_osd_vms; do
+      do_on_node $vm "sudo yum install -y epel-release"
+    done
+else
+    for vm in $ceph_vms; do
+      do_on_node $vm "sudo yum install -y epel-release"
+    done
+fi
 
 # rsync the Chef repository into the non-root user (vagrant)'s home directory
 do_on_node ceph-bootstrap "sudo yum update"
@@ -117,7 +127,7 @@ do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/roles && $KNIFE role from file *.
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/environments && $KNIFE environment from file $BOOTSTRAP_CHEF_ENV.json"
 
 # install and ceph-bootstrap Chef on cluster nodes
-if [[ CEPH_ARCHITECTURE != "converged"]]; then
+if [[ CEPH_ARCHITECTURE != "converged" ]]; then
     i=1
     for vm in $ceph_mon_vms; do
       do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
@@ -197,7 +207,7 @@ do_on_node ceph-bootstrap "cd \$HOME && $KNIFE actor map"
 # using the actor map, set ceph-bootstrap, ceph-*-vms (if any) as admins so that they can write into the data bag
 do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins ceph-bootstrap.$BOOTSTRAP_DOMAIN"  # && $KNIFE group add actor admins cos-vm1.$BOOTSTRAP_DOMAIN"
 
-if [[ CEPH_ARCHITECTURE != "converged"]]; then
+if [[ CEPH_ARCHITECTURE != "converged" ]]; then
     for vm in $ceph_mon_vms $ceph_rgw_vms $ceph_osd_vms; do
       do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins $vm.$BOOTSTRAP_DOMAIN"
     done
