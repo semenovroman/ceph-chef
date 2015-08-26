@@ -18,23 +18,28 @@
 # Exit immediately if anything goes wrong, instead of making things worse.
 set -e
 
+clear
 
 echo " ____            _            ____ _           __ "
 echo "/ ___| ___ _ __ | |__        / ___| |__   ___ / _|"
 echo "| |   / _ \ '_ \| '_ \ _____| |   | '_ \ / _ \ |_ "
 echo "| |__|  __/ |_) | | | |_____| |___| | | |  __/  _|"
-echo "\____\___| .__/|_| |_|      \____|_| |_|\___|_|   "
-echo "        |_|                                       "
+echo "\____ \___| .__/|_| |_|      \____|_| |_|\___|_|  "
+echo "          |_|                                     "
 echo
 echo "Ceph-Chef Vagrant BootstrapV2 0.9.0"
 echo "--------------------------------------------"
 echo "Bootstrapping local Vagrant environment..."
+echo
 
-while getopts "v" opt; do
+while getopts vs opt; do
   case $opt in
     # verbose
     v)
       set -x
+      ;;
+    s)
+      BOOTSTRAP_SKIP_VMS=1
       ;;
   esac
 done
@@ -53,13 +58,19 @@ fi
 # Set all configuration variables that are not defined.
 # DO NOT EDIT HERE; create bootstrap_config.sh as shown above from the
 # template and define variables there.
+# CEPH_OS: rhel, centos, ubuntu
+# CEPH_VMS: all, bootstrap, mon, mds, rgw, osd, fs
+export CEPH_OS=${CEPH_OS:-centos}
+# Change CEPH_VMS here if you want to (see above)
+export CEPH_VMS=all
 export CEPH_VM_DIR=${CEPH_VM_DIR:-$HOME/CEPH-VMs}
+export BOOTSTRAP_SKIP_VMS=${BOOTSTRAP_SKIP_VMS:-0}
 export BOOTSTRAP_DOMAIN=${BOOTSTRAP_DOMAIN:-ceph.example.com}
 export BOOTSTRAP_CHEF_ENV=${BOOTSTRAP_CHEF_ENV:-Test-Laptop-Vagrant}
 export BOOTSTRAP_CHEF_DO_CONVERGE=${BOOTSTRAP_CHEF_DO_CONVERGE:-1}
 export BOOTSTRAP_HTTP_PROXY=${BOOTSTRAP_HTTP_PROXY:-}
 export BOOTSTRAP_HTTPS_PROXY=${BOOTSTRAP_HTTPS_PROXY:-}
-export BOOTSTRAP_ADDITIONAL_CACERTS_DIR=${BOOTSTRAP_ADDITIONAL_CACERTS_DIR:-}
+#export BOOTSTRAP_ADDITIONAL_CACERTS_DIR=${BOOTSTRAP_ADDITIONAL_CACERTS_DIR:-}
 export BOOTSTRAP_CACHE_DIR=${BOOTSTRAP_CACHE_DIR:-$HOME/.ceph-cache}
 export BOOTSTRAP_APT_MIRROR=${BOOTSTRAP_APT_MIRROR:-}
 export BOOTSTRAP_VM_MEM=${BOOTSTRAP_VM_MEM:-2048}
@@ -74,8 +85,10 @@ echo "Performing preflight environment validation..."
 source $REPO_ROOT/bootstrap/common_scripts/bootstrap_validate_env.sh
 
 # Test that Vagrant is really installed and of an appropriate version.
-echo "Checking VirtualBox and Vagrant..."
-source $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_test.sh
+if [[ $BOOTSTRAP_SKIP_VMS != 1 ]]; then
+  echo "Checking VirtualBox and Vagrant..."
+  source $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_test.sh
+fi
 
 # Configure and test any proxies configured.
 if [[ ! -z $BOOTSTRAP_HTTP_PROXY ]] || [[ ! -z $BOOTSTRAP_HTTPS_PROXY ]] ; then
@@ -89,12 +102,14 @@ echo "Downloading necessary files to local cache..."
 source $REPO_ROOT/bootstrap/common_scripts/bootstrap_prereqs.sh
 
 # Terminate existing CEPH VMs.
-echo "Shutting down and unregistering VMs from VirtualBox..."
-$REPO_ROOT/bootstrap/vagrant_scripts/vagrant_clean.sh
+#if [[ $BOOTSTRAP_SKIP_VMS != 1 ]]; then
+#  echo "Shutting down and unregistering VMs from VirtualBox..."
+#  $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_clean.sh
 
-# Create VMs in Vagrant and start them.
-echo "Starting local Vagrant cluster..."
-$REPO_ROOT/bootstrap/vagrant_scripts/vagrant_create.sh
+  # Create VMs in Vagrant and start them.
+  echo "Starting local Vagrant cluster..."
+  $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_create.sh
+#fi
 
 # Install and configure Chef on all Vagrant hosts.
 echo "Installing and configuring Chef on all nodes..."

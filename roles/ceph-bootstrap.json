@@ -1,5 +1,5 @@
 {
-    "name": "ceph-admin-bootstrap",
+    "name": "ceph-bootstrap",
     "default_attributes": {
     },
     "json_class": "Chef::Role",

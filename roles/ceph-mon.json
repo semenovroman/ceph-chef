@@ -6,6 +6,6 @@
     "recipe[ceph::repo]",
     "recipe[ceph-chef::ceph-mon]",
     "recipe[ceph::mon]",
-    "recipe[ceph::pools]
+    "recipe[ceph::pools]"
   ]
 }

@@ -54,7 +54,15 @@ function remove_DHCPservers {
 ###################################################################
 # Function to create all VMs using Vagrant
 function create_vagrant_vms {
-  cd $REPO_ROOT/bootstrap/vagrant_scripts && vagrant up
+  cd $REPO_ROOT/bootstrap/vagrant_scripts
+  if [[ $BOOTSTRAP_SKIP_VMS == 0 ]]; then
+    echo "Shutting down and unregistering VMs from VirtualBox..."
+    $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_clean.sh
+    vagrant up
+  else
+    echo "Reloading VMs from VirtualBox..."
+    vagrant reload
+  fi
 }
 
 # only execute functions if being run and not sourced

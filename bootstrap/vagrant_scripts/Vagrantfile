@@ -23,7 +23,7 @@ require 'uri' # used to parse the local mirror if one is given
 
 Vagrant.require_version ">= 1.7.0"
 
-$lsb_name = "centos"  # "ubuntu", "redhat" ?? later...
+$lsb_name = ENV['CEPH_OS']||="centos"
 
 # The storage_controller will need to be modified for different images because this gets defined when the image is created
 $storage_controller = "SATA Controller"  # Ubuntu is "SATAController"
@@ -39,7 +39,7 @@ $osd_node_start = 30
 $mon_nodes = 3
 $osd_nodes = 3
 $rgw_nodes = 1
-$cluster_nodes = $mon_nodes + $osd_nodes + $rgw_nodes
+#$cluster_nodes = $mon_nodes + $osd_nodes + $rgw_nodes
 
 # if proxies are provided, configure them before configuring any local mirror override
 # RUN THIS SCRIPT WITH sudo AND privileged = false so that $HOME is set to the
@@ -73,227 +73,236 @@ end
 
 # try to yum update immediately so that the bootstrap does not wander along for a while
 # and waste everyone's time in case our repo configuration set above is broken
-$repos_script = <<-EOH
-  sudo yum update -y
-EOH
+if $lsb_name == 'centos' or $lsb_name == 'rhel'
+    $repos_script = <<-EOH
+      sudo yum update -y
+    EOH
+else
+    $repos_script = <<-EOH
+      sudo apt update
+    EOH
+end
+
 # END repository configuration script
 
 at_exit do
   raise $! unless $!.success?
   # put anything that should happen on successful provisioning below here
+  puts "Vagrant has completed provisioning the VMs"
 end
 
 Vagrant.configure("2") do |config|
-  # configure ceph-admin-bootstrap node
-  config.vm.box = "chef/centos-7.1"
+  # configure bootstrap node
+  if $lsb_name == 'centos'
+    config.vm.box = "chef/centos-7.1"
+  end
 
-  # Define the vagrant name as "bootstrap" but make the host name "ceph-admin-bootstrap"
-  config.vm.define "bootstrap" do |machine|
-    machine.vm.hostname = "ceph-admin-bootstrap.#{$bootstrap_domain}"
+  if ENV['CEPH_VMS'].include? 'bootstrap' or ENV['CEPH_VMS'].include? 'all'
+      config.vm.define "ceph-bootstrap", primary: true do |machine|
+        machine.vm.hostname = "ceph-bootstrap.#{$bootstrap_domain}"
 
-    machine.vm.network :private_network, ip: $mgt_bootstrap_ip, netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
-    machine.vm.network :private_network, ip: "172.16.101.3", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
-    machine.vm.network :private_network, ip: "192.168.101.3", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
+        machine.vm.network :private_network, ip: $mgt_bootstrap_ip, netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
+        machine.vm.network :private_network, ip: "172.16.101.3", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
+        machine.vm.network :private_network, ip: "192.168.101.3", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
 
-    machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
-    machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
-    machine.vm.synced_folder ".", "/vagrant", disabled: true
+        machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
+        machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
+        machine.vm.synced_folder ".", "/vagrant", disabled: true
 
-    # configure proxy servers (do not run as root)
-    machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
-      s.privileged = false
-      s.inline = $proxy_configuration_script
-    end
-
-    # set up repositories
-    machine.vm.provision "configure-repositories", type: "shell" do |s|
-      s.inline = $repos_script
-    end
-
-    # configure a hostfile entry with the IP of the bootstrap node (for Chef)
-    machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
-      s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-admin-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
-    end
-
-    machine.vm.provider :virtualbox do |vb|
-      #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
-      vb.customize ["modifyvm", :id, "--memory", "2048"]
-      vb.customize ["modifyvm", :id, "--vram", "16"]
-      vb.customize ["modifyvm", :id, "--cpus", "1"]
-      vb.customize ["modifyvm", :id, "--largepages", "on"]
-      vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
-      vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
-      vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-      vb.customize ["modifyvm", :id, "--ioapic", "on"]
-    end
-  end # bootstrap node
-
-  # configure ceph mon nodes
-  (1..$mon_nodes).each do |i|
-    config.vm.define "ceph-mon-vm#{i}" do |machine|
-      machine.vm.hostname = "ceph-mon-vm#{i}.#{$bootstrap_domain}"
-
-      machine.vm.network :private_network, ip: "10.0.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
-      machine.vm.network :private_network, ip: "172.16.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
-      machine.vm.network :private_network, ip: "192.168.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
-
-      machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
-      machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
-      machine.vm.synced_folder ".", "/vagrant", disabled: true
-
-      # configure proxy servers (do not run as root)
-      machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
-        s.privileged = false
-        s.inline = $proxy_configuration_script
-      end
-
-      # set up repositories
-      machine.vm.provision "configure-repositories", type: "shell" do |s|
-        s.inline = $repos_script
-      end
-
-      # configure a hostfile entry with the IP of the bootstrap node (for Chef)
-      machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
-        s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-admin-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
-      end
-
-      machine.vm.provider :virtualbox do |vb|
-        vm_name = "ceph-mon-vm#{i}"
-
-        # Having issues with vm1 so removing things to find the issue...
-        #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
-        vb.customize ["modifyvm", :id, "--memory", "2560"]
-        vb.customize ["modifyvm", :id, "--vram", "16"]
-        vb.customize ["modifyvm", :id, "--cpus", "2"]
-        vb.customize ["modifyvm", :id, "--largepages", "on"]
-        vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
-        vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
-        vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-        vb.customize ["modifyvm", :id, "--ioapic", "on"]
-
-      end # machine.vm.provider
-    end # config.vm.define
-  end # 1..$mon_nodes each
-
-  # configure rgw nodes
-  (1..$rgw_nodes).each do |i|
-    config.vm.define "ceph-rgw-vm#{i}" do |machine|
-      machine.vm.hostname = "ceph-rgw-vm#{i}.#{$bootstrap_domain}"
-
-      machine.vm.network :private_network, ip: "10.0.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
-      machine.vm.network :private_network, ip: "172.16.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
-      machine.vm.network :private_network, ip: "192.168.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
-
-      machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
-      machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
-      machine.vm.synced_folder ".", "/vagrant", disabled: true
-
-      # configure proxy servers (do not run as root)
-      machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
-        s.privileged = false
-        s.inline = $proxy_configuration_script
-      end
-
-      # set up repositories
-      machine.vm.provision "configure-repositories", type: "shell" do |s|
-        s.inline = $repos_script
-      end
-
-      # configure a hostfile entry with the IP of the bootstrap node (for Chef)
-      machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
-        s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-admin-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
-      end
-
-      machine.vm.provider :virtualbox do |vb|
-        vm_name = "ceph-rgw-vm#{i}"
-
-        # Having issues with vm1 so removing things to find the issue...
-        #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
-        vb.customize ["modifyvm", :id, "--memory", "2560"]
-        vb.customize ["modifyvm", :id, "--vram", "16"]
-        vb.customize ["modifyvm", :id, "--cpus", "2"]
-        vb.customize ["modifyvm", :id, "--largepages", "on"]
-        vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
-        vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
-        vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-        vb.customize ["modifyvm", :id, "--ioapic", "on"]
-
-      end # machine.vm.provider
-    end # config.vm.define
-  end # 1..$rgw_nodes each
-
-  # configure osd nodes
-  (1..$osd_nodes).each do |i|
-    config.vm.define "ceph-osd-vm#{i}" do |machine|
-      machine.vm.hostname = "ceph-osd-vm#{i}.#{$bootstrap_domain}"
-
-      machine.vm.network :private_network, ip: "10.0.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
-      machine.vm.network :private_network, ip: "172.16.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
-      machine.vm.network :private_network, ip: "192.168.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
-
-      machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
-      machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
-      machine.vm.synced_folder ".", "/vagrant", disabled: true
-
-      # configure proxy servers (do not run as root)
-      machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
-        s.privileged = false
-        s.inline = $proxy_configuration_script
-      end
-
-      # set up repositories
-      machine.vm.provision "configure-repositories", type: "shell" do |s|
-        s.inline = $repos_script
-      end
-
-      # configure a hostfile entry with the IP of the bootstrap node (for Chef)
-      machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
-        s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-admin-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
-      end
-
-      # add swap space
-      #machine.vm.provision "add-swap-space", type: "shell" do |s|
-      #  s.inline = $add_swap_script
-      #end
-
-      memory = ( ENV["CLUSTER_VM_MEM"] or "2560" )
-      cpus = ( ENV["CLUSTER_VM_CPUS"] or "2" )
-      vram = ( ENV["CLUSTER_VM_VRAM"] or "16" )
-      disk_size = ( ENV["CLUSTER_VM_DRIVE_SIZE"] or "20480" )
-
-      machine.vm.provider :virtualbox do |vb|
-        vm_name = "ceph-osd-vm#{i}"
-        #vb.name = vm_name
-
-        # Having issues with vm1 so removing things to find the issue...
-        #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
-        vb.customize ["modifyvm", :id, "--memory", memory]
-        vb.customize ["modifyvm", :id, "--vram", vram]
-        vb.customize ["modifyvm", :id, "--cpus", cpus]
-        vb.customize ["modifyvm", :id, "--largepages", "on"]
-        vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
-        vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
-        vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-        vb.customize ["modifyvm", :id, "--ioapic", "on"]
-
-        # this is an unpleasing hack to locate the VM on disk, so that additional disks can be stored with it
-        # this assumes that all VMs will be going into the default VirtualBox folder
-        begin
-          default_vm_config_file = %x[VBoxManage list systemproperties | grep 'Default machine folder']
-          default_vm_loc = default_vm_config_file.match(/^Default machine folder:\s+(.+)$/)[1]
-          vm_dir = File.join(default_vm_loc, vm_name)
-        rescue
-          fail "Unable to locate VM #{vm_name} on disk, terminating"
+        # configure proxy servers (do not run as root)
+        machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
+          s.privileged = false
+          s.inline = $proxy_configuration_script
         end
 
-        # Really only need these for OSDs...
-        ('b'..'d').each_with_index do |disk, idx|
-          disk_file = File.join(vm_dir, "ceph-osd-vm#{i}-#{disk}.vdi")
-          vb.customize ["createhd", "--filename", disk_file, "--size", disk_size]
-          vb.customize ["storageattach", :id, "--storagectl", $storage_controller, "--device", "0", "--port", "#{3+idx}", "--type", "hdd", "--medium", disk_file]
-        end # b..e each
-      end # machine.vm.provider
-    end # config.vm.define
-  end # 1..$osd_nodes each
+        # set up repositories
+        machine.vm.provision "configure-repositories", type: "shell" do |s|
+          s.inline = $repos_script
+        end
+
+        # configure a hostfile entry with the IP of the bootstrap node (for Chef)
+        machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
+          s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
+        end
+
+        machine.vm.provider :virtualbox do |vb|
+          vb.name = "ceph-bootstrap"
+
+          #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
+          vb.customize ["modifyvm", :id, "--memory", "2048"]
+          vb.customize ["modifyvm", :id, "--vram", "16"]
+          vb.customize ["modifyvm", :id, "--cpus", "1"]
+          vb.customize ["modifyvm", :id, "--largepages", "on"]
+          vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
+          vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
+          vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+          vb.customize ["modifyvm", :id, "--ioapic", "on"]
+        end
+      end # bootstrap node
+  end
+
+  # configure ceph mon nodes
+  if ENV['CEPH_VMS'].include? 'mon' or ENV['CEPH_VMS'].include? 'all'
+      (1..$mon_nodes).each do |i|
+        config.vm.define "ceph-mon-vm#{i}" do |machine|
+          machine.vm.hostname = "ceph-mon-vm#{i}.#{$bootstrap_domain}"
+
+          machine.vm.network :private_network, ip: "10.0.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
+          machine.vm.network :private_network, ip: "172.16.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
+          machine.vm.network :private_network, ip: "192.168.101.#{$mon_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
+
+          machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
+          machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
+          machine.vm.synced_folder ".", "/vagrant", disabled: true
+
+          # configure proxy servers (do not run as root)
+          machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
+            s.privileged = false
+            s.inline = $proxy_configuration_script
+          end
+
+          # set up repositories
+          machine.vm.provision "configure-repositories", type: "shell" do |s|
+            s.inline = $repos_script
+          end
+
+          # configure a hostfile entry with the IP of the bootstrap node (for Chef)
+          machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
+            s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
+          end
+
+          machine.vm.provider :virtualbox do |vb|
+            vb.name = "ceph-mon-vm#{i}"
+
+            #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
+            vb.customize ["modifyvm", :id, "--memory", "2560"]
+            vb.customize ["modifyvm", :id, "--vram", "16"]
+            vb.customize ["modifyvm", :id, "--cpus", "2"]
+            vb.customize ["modifyvm", :id, "--largepages", "on"]
+            vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
+            vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
+            vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+            vb.customize ["modifyvm", :id, "--ioapic", "on"]
+          end # machine.vm.provider
+        end # config.vm.define
+      end # 1..$mon_nodes each
+  end
+
+  # configure rgw nodes
+  if ENV['CEPH_VMS'].include? 'rgw' or ENV['CEPH_VMS'].include? 'all'
+      (1..$rgw_nodes).each do |i|
+        config.vm.define "ceph-rgw-vm#{i}" do |machine|
+          machine.vm.hostname = "ceph-rgw-vm#{i}.#{$bootstrap_domain}"
+
+          machine.vm.network :private_network, ip: "10.0.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
+          machine.vm.network :private_network, ip: "172.16.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
+          machine.vm.network :private_network, ip: "192.168.101.#{$rgw_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
+
+          machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
+          machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
+          machine.vm.synced_folder ".", "/vagrant", disabled: true
+
+          # configure proxy servers (do not run as root)
+          machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
+            s.privileged = false
+            s.inline = $proxy_configuration_script
+          end
+
+          # set up repositories
+          machine.vm.provision "configure-repositories", type: "shell" do |s|
+            s.inline = $repos_script
+          end
+
+          # configure a hostfile entry with the IP of the bootstrap node (for Chef)
+          machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
+            s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
+          end
+
+          machine.vm.provider :virtualbox do |vb|
+            vb.name = "ceph-rgw-vm#{i}"
+
+            #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
+            vb.customize ["modifyvm", :id, "--memory", "2560"]
+            vb.customize ["modifyvm", :id, "--vram", "16"]
+            vb.customize ["modifyvm", :id, "--cpus", "2"]
+            vb.customize ["modifyvm", :id, "--largepages", "on"]
+            vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
+            vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
+            vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+            vb.customize ["modifyvm", :id, "--ioapic", "on"]
+          end # machine.vm.provider
+        end # config.vm.define
+      end # 1..$rgw_nodes each
+  end # end rgw if
+
+  # configure osd nodes
+  if ENV['CEPH_VMS'].include? 'osd' or ENV['CEPH_VMS'].include? 'all'
+      (1..$osd_nodes).each do |i|
+        config.vm.define "ceph-osd-vm#{i}" do |machine|
+          machine.vm.hostname = "ceph-osd-vm#{i}.#{$bootstrap_domain}"
+
+          machine.vm.network :private_network, ip: "10.0.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "10.0.101.2"
+          machine.vm.network :private_network, ip: "172.16.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "172.16.101.2"
+          machine.vm.network :private_network, ip: "192.168.101.#{$osd_node_start+i}", netmask: "255.255.255.0", adapter_ip: "192.168.101.2"
+
+          machine.vm.synced_folder(ENV['REPO_ROOT'], "/ceph-host") unless ENV['REPO_ROOT'].nil?
+          machine.vm.synced_folder(ENV['BOOTSTRAP_CACHE_DIR'], "/ceph-files") unless ENV['BOOTSTRAP_CACHE_DIR'].nil?
+          machine.vm.synced_folder ".", "/vagrant", disabled: true
+
+          # configure proxy servers (do not run as root)
+          machine.vm.provision "configure-proxy-servers", type: "shell" do |s|
+            s.privileged = false
+            s.inline = $proxy_configuration_script
+          end
+
+          # set up repositories
+          machine.vm.provision "configure-repositories", type: "shell" do |s|
+            s.inline = $repos_script
+          end
+
+          # configure a hostfile entry with the IP of the bootstrap node (for Chef)
+          machine.vm.provision "configure-bootstrap-hostfile-entry", type: "shell" do |s|
+            s.inline = "echo -e '#{$mgt_bootstrap_ip}\tceph-bootstrap.#{$bootstrap_domain}\n' >> /etc/hosts"
+          end
+
+          memory = ( ENV["CLUSTER_VM_MEM"] or "2560" )
+          cpus = ( ENV["CLUSTER_VM_CPUS"] or "2" )
+          vram = ( ENV["CLUSTER_VM_VRAM"] or "16" )
+          disk_size = ( ENV["CLUSTER_VM_DRIVE_SIZE"] or "20480" )
+
+          machine.vm.provider :virtualbox do |vb|
+            vb.name = "ceph-osd-vm#{i}"
+            vm_name = vb.name
+
+            #vb.customize ["modifyvm", :id, "--nictype2", "82543GC"]
+            vb.customize ["modifyvm", :id, "--memory", memory]
+            vb.customize ["modifyvm", :id, "--vram", vram]
+            vb.customize ["modifyvm", :id, "--cpus", cpus]
+            vb.customize ["modifyvm", :id, "--largepages", "on"]
+            vb.customize ["modifyvm", :id, "--nestedpaging", "on"]
+            vb.customize ["modifyvm", :id, "--vtxvpid", "on"]
+            vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+            vb.customize ["modifyvm", :id, "--ioapic", "on"]
+
+            # this is an unpleasing hack to locate the VM on disk, so that additional disks can be stored with it
+            # this assumes that all VMs will be going into the default VirtualBox folder
+            begin
+              default_vm_config_file = %x[VBoxManage list systemproperties | grep 'Default machine folder']
+              default_vm_loc = default_vm_config_file.match(/^Default machine folder:\s+(.+)$/)[1]
+              vm_dir = File.join(default_vm_loc, vm_name)
+            rescue
+              fail "Unable to locate VM #{vm_name} on disk, terminating"
+            end
+
+            # Really only need these for OSDs...
+            ('b'..'d').each_with_index do |disk, idx|
+              disk_file = File.join(vm_dir, "ceph-osd-vm#{i}-#{disk}.vdi")
+              vb.customize ["createhd", "--filename", disk_file, "--size", disk_size]
+              vb.customize ["storageattach", :id, "--storagectl", $storage_controller, "--device", "0", "--port", "#{3+idx}", "--type", "hdd", "--medium", disk_file]
+            end # b..e each
+          end # machine.vm.provider
+        end # config.vm.define
+      end # 1..$osd_nodes each
+  end # end osd if
 
 end

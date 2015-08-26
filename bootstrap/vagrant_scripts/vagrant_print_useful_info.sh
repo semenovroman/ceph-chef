@@ -16,7 +16,9 @@
 #
 
 # Exit immediately if anything goes wrong, instead of making things worse.
-set -e
+if [[ $BOOTSTRAP_SKIP_VMS == 0 ]];
+  set -e
+fi
 
 FAILED_ENVVAR_CHECK=0
 REQUIRED_VARS=( BOOTSTRAP_CHEF_ENV REPO_ROOT )
@@ -32,9 +34,9 @@ cd $REPO_ROOT/bootstrap/vagrant_scripts
 
 KNIFE=/opt/opscode/embedded/bin/knife
 # Dump the data bag contents to a variable.
-DATA_BAG=$(vagrant ssh ceph-admin-bootstrap -c "$KNIFE data bag show configs $BOOTSTRAP_CHEF_ENV -F yaml")
+DATA_BAG=$(vagrant ssh bootstrap -c "$KNIFE data bag show configs $BOOTSTRAP_CHEF_ENV -F yaml")
 # Get the management VIP.
-MANAGEMENT_VIP=$(vagrant ssh ceph-admin-bootstrap -c "$KNIFE environment show $BOOTSTRAP_CHEF_ENV -a override_attributes.ceph-chef.management.vip | tail -n +2 | awk '{ print \$2 }'")
+MANAGEMENT_VIP=$(vagrant ssh bootstrap -c "$KNIFE environment show $BOOTSTRAP_CHEF_ENV -a override_attributes.ceph-chef.management.vip | tail -n +2 | awk '{ print \$2 }'")
 
 # this is highly naive for obvious reasons (will break on multi-line keys, spaces)
 # but is sufficient for the items to be extracted here
@@ -49,7 +51,7 @@ ROOT_PASSWORD=$(extract_value 'cobbler-root-password')
 echo "------------------------------------------------------------"
 echo "Everything looks like it's been installed successfully!"
 echo
-echo "Here are a few additional passwords:"
+echo "Here are a few additional password(s):"
 echo "System root password: $ROOT_PASSWORD"
 echo
 echo "Thanks for using Ceph-Chef!"

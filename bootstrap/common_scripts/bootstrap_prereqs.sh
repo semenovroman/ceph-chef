@@ -72,6 +72,8 @@ download_file $CHEF_SERVER_RPM https://web-dl.packagecloud.io/chef/stable/packag
 
 # Pull needed cookbooks from the Chef Supermarket.
 mkdir -p $BOOTSTRAP_CACHE_DIR/cookbooks
+download_file cookbooks/cron-1.6.1.tar.gz http://cookbooks.opscode.com/api/v1/cookbooks/cron/versions/1.6.1/download
+download_file cookbooks/logrotate-1.6.0.tar.gz http://cookbooks.opscode.com/api/v1/cookbooks/logrotate/versions/1.6.0/download
 download_file cookbooks/ntp-1.8.6.tar.gz http://cookbooks.opscode.com/api/v1/cookbooks/ntp/versions/1.8.6/download
 download_file cookbooks/yum-3.2.2.tar.gz http://cookbooks.opscode.com/api/v1/cookbooks/yum/versions/3.2.2/download
 
