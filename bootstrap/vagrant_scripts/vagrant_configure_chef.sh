@@ -69,20 +69,10 @@ do_on_node ceph-bootstrap "sudo chef-server-ctl user-create admin admin admin ad
 do_on_node ceph-bootstrap "sudo chef-server-ctl org-create ceph ceph --association admin --filename /etc/opscode/ceph-validator.pem"
 do_on_node ceph-bootstrap "sudo chmod 0644 /etc/opscode/admin.pem /etc/opscode/ceph-validator.pem"
 
-# May not have files so keep going if none are found
-if [[ $BOOTSTRAP_SKIP_VMS == 0 ]]; then
-  set +e
-fi
-# NOTE: May need to change chef-\ to chef_\ in Ubuntu
-do_on_node ceph-bootstrap "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-if [[ $BOOTSTRAP_SKIP_VMS == 0 ]]; then
-  set -e
-fi
-
 # configure knife on the ceph-bootstrap node and perform a knife ceph-bootstrap to create the ceph-bootstrap node in Chef
-do_on_node ceph-bootstrap "mkdir -p \$HOME/.chef && echo -e \"chef_server_url 'https://bootstrap.$BOOTSTRAP_DOMAIN/organizations/ceph'\\\nvalidation_client_name 'ceph-validator'\\\nvalidation_key '/etc/opscode/ceph-validator.pem'\\\nnode_name 'admin'\\\nclient_key '/etc/opscode/admin.pem'\\\nknife['editor'] = 'vim'\\\ncookbook_path [ \\\"#{ENV['HOME']}/ceph-chef/cookbooks\\\" ]\" > \$HOME/.chef/knife.rb"
+do_on_node ceph-bootstrap "mkdir -p \$HOME/.chef && echo -e \"chef_server_url 'https://ceph-bootstrap.$BOOTSTRAP_DOMAIN/organizations/ceph'\\\nvalidation_client_name 'ceph-validator'\\\nvalidation_key '/etc/opscode/ceph-validator.pem'\\\nnode_name 'admin'\\\nclient_key '/etc/opscode/admin.pem'\\\nknife['editor'] = 'vim'\\\ncookbook_path [ \\\"#{ENV['HOME']}/ceph-chef/cookbooks\\\" ]\" > \$HOME/.chef/knife.rb"
 do_on_node ceph-bootstrap "$KNIFE ssl fetch"
-do_on_node ceph-bootstrap "$KNIFE ceph-bootstrap -x vagrant -P vagrant --sudo 10.0.101.3"
+do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.3"
 
 # Initialize VM lists
 #TODO: Maybe add these as environment variables and set them in vagrant later
@@ -106,7 +96,7 @@ do_on_node ceph-bootstrap "sudo yum install -y rsync"
 do_on_node ceph-bootstrap "rsync -a /ceph-host/* \$HOME/ceph-chef"
 
 # add the dependency cookbooks from the file cache
-do_on_node ceph-bootstrap "echo 'Checking on dependency for cookbooks...'"
+echo "Checking on dependency for cookbooks..."
 do_on_node ceph-bootstrap "cp /ceph-files/cookbooks/*.tar.gz \$HOME/ceph-chef/cookbooks && cd \$HOME/ceph-chef/cookbooks && ls -1 *.tar.gz | xargs -I% tar xvzf %"
 
 # build binaries before uploading the ceph-chef cookbook
@@ -117,7 +107,6 @@ do_on_node ceph-bootstrap "sudo yum update"
 
 # upload all cookbooks, roles and our chosen environment to the Chef server
 # (cookbook upload uses the cookbook_path set when configuring knife on the ceph-bootstrap node)
-do_on_node ceph-bootstrap "echo 'Starting knife to upload...'"
 do_on_node ceph-bootstrap "$KNIFE cookbook upload chef-client ceph cron logrotate ntp yum"
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/roles && $KNIFE role from file *.json"
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/environments && $KNIFE environment from file $BOOTSTRAP_CHEF_ENV.json"
@@ -126,28 +115,28 @@ do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/environments && $KNIFE environmen
 i=1
 for vm in $ceph_mon_vms; do
   do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE ceph-bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mon_node_start+i))"
+  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mon_node_start+i))"
   i=`expr $i + 1`
 done
 
 i=1
 for vm in $ceph_mds_vms; do
   do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE ceph-bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mds_node_start+i))"
+  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mds_node_start+i))"
   i=`expr $i + 1`
 done
 
 i=1
 for vm in $ceph_rgw_vms; do
   do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE ceph-bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($rgw_node_start+i))"
+  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($rgw_node_start+i))"
   i=`expr $i + 1`
 done
 
 i=1
 for vm in $ceph_osd_vms; do
   do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE ceph-bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($osd_node_start+i))"
+  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($osd_node_start+i))"
   i=`expr $i + 1`
 done
 

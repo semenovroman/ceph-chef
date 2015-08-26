@@ -107,8 +107,8 @@ source $REPO_ROOT/bootstrap/common_scripts/bootstrap_prereqs.sh
 #  $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_clean.sh
 
   # Create VMs in Vagrant and start them.
-  echo "Starting local Vagrant cluster..."
-  $REPO_ROOT/bootstrap/vagrant_scripts/vagrant_create.sh
+echo "Starting local Vagrant cluster..."
+$REPO_ROOT/bootstrap/vagrant_scripts/vagrant_create.sh
 #fi
 
 # Install and configure Chef on all Vagrant hosts.

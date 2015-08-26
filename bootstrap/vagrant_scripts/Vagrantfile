@@ -87,8 +87,6 @@ end
 
 at_exit do
   raise $! unless $!.success?
-  # put anything that should happen on successful provisioning below here
-  puts "Vagrant has completed provisioning the VMs"
 end
 
 Vagrant.configure("2") do |config|
