@@ -18,6 +18,7 @@
 
 # TODO: MUST have platform neutral code added!!!!!
 
+# Only used on non-converged architecture
 mon_node_start=10
 rgw_node_start=20
 osd_node_start=30
@@ -76,10 +77,14 @@ do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.10
 
 # Initialize VM lists
 #TODO: Maybe add these as environment variables and set them in vagrant later
+# Only used in non-converged architecture
 ceph_mon_vms="ceph-mon-vm1 ceph-mon-vm2 ceph-mon-vm3"
 ceph_mds_vms=""
 ceph_rgw_vms="ceph-rgw-vm1"
 ceph_osd_vms="ceph-osd-vm1 ceph-osd-vm2 ceph-osd-vm3"
+
+# Only used in converged architecture
+ceph_vms="ceph-vm1 ceph-vm2 ceph-vm3"
 
 # install the knife-acl plugin into embedded knife
 do_on_node ceph-bootstrap "sudo /opt/opscode/embedded/bin/gem install /ceph-files/knife-acl-0.0.12.gem"
@@ -112,67 +117,102 @@ do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/roles && $KNIFE role from file *.
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/environments && $KNIFE environment from file $BOOTSTRAP_CHEF_ENV.json"
 
 # install and ceph-bootstrap Chef on cluster nodes
-i=1
-for vm in $ceph_mon_vms; do
-  do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mon_node_start+i))"
-  i=`expr $i + 1`
-done
+if [[ CEPH_ARCHITECTURE != "converged"]]; then
+    i=1
+    for vm in $ceph_mon_vms; do
+      do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
+      do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mon_node_start+i))"
+      i=`expr $i + 1`
+    done
 
-i=1
-for vm in $ceph_mds_vms; do
-  do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mds_node_start+i))"
-  i=`expr $i + 1`
-done
+    i=1
+    for vm in $ceph_mds_vms; do
+      do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
+      do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($mds_node_start+i))"
+      i=`expr $i + 1`
+    done
 
-i=1
-for vm in $ceph_rgw_vms; do
-  do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($rgw_node_start+i))"
-  i=`expr $i + 1`
-done
+    i=1
+    for vm in $ceph_rgw_vms; do
+      do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
+      do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($rgw_node_start+i))"
+      i=`expr $i + 1`
+    done
 
-i=1
-for vm in $ceph_osd_vms; do
-  do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
-  do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($osd_node_start+i))"
-  i=`expr $i + 1`
-done
+    i=1
+    for vm in $ceph_osd_vms; do
+      do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
+      do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.$(($osd_node_start+i))"
+      i=`expr $i + 1`
+    done
 
-# augment the previously configured nodes with our newly uploaded environments and roles
-for vm in ceph-bootstrap $ceph_mon_vms $ceph_mds_vms $ceph_rgw_vms $ceph_osd_vms; do
-  do_on_node ceph-bootstrap "$KNIFE node environment set $vm.$BOOTSTRAP_DOMAIN $BOOTSTRAP_CHEF_ENV"
-done
+    # augment the previously configured nodes with our newly uploaded environments and roles
+    for vm in ceph-bootstrap $ceph_mon_vms $ceph_mds_vms $ceph_rgw_vms $ceph_osd_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node environment set $vm.$BOOTSTRAP_DOMAIN $BOOTSTRAP_CHEF_ENV"
+    done
 
-do_on_node ceph-bootstrap "$KNIFE node run_list set ceph-bootstrap.$BOOTSTRAP_DOMAIN 'role[bootstrap]'"
-# ceph-mons
-for vm in $ceph_mon_vms; do
-  do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mon]'"
-done
-# ceph-mds
-for vm in $ceph_mds_vms; do
-  do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mds]'"
-done
-# ceph-rgws
-for vm in $ceph_rgw_vms; do
-  do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-rgw]'"
-done
-# ceph-osds
-for vm in $ceph_osd_vms; do
-  do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-osd]'"
-done
+    do_on_node ceph-bootstrap "$KNIFE node run_list set ceph-bootstrap.$BOOTSTRAP_DOMAIN 'role[bootstrap]'"
+    # ceph-mons
+    for vm in $ceph_mon_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mon]'"
+    done
+    # ceph-mds
+    for vm in $ceph_mds_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mds]'"
+    done
+    # ceph-rgws
+    for vm in $ceph_rgw_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-rgw]'"
+    done
+    # ceph-osds
+    for vm in $ceph_osd_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-osd]'"
+    done
+else
+    i=1
+    for vm in $ceph_vms; do
+      do_on_node $vm "sudo rpm -Uvh \$(find /ceph-files/ -name chef-\*rpm -not -name \*downloaded | tail -1)"
+      do_on_node ceph-bootstrap "$KNIFE bootstrap -x vagrant -P vagrant --sudo 10.0.101.1${i}"
+      i=`expr $i + 1`
+    done
+
+    # augment the previously configured nodes with our newly uploaded environments and roles
+    for vm in ceph-bootstrap $ceph_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node environment set $vm.$BOOTSTRAP_DOMAIN $BOOTSTRAP_CHEF_ENV"
+    done
+
+    do_on_node ceph-bootstrap "$KNIFE node run_list set ceph-bootstrap.$BOOTSTRAP_DOMAIN 'role[bootstrap]'"
+    # Just put rgw on first node (only need one)
+    do_on_node ceph-bootstrap "$KNIFE node run_list set ceph-vm1.$BOOTSTRAP_DOMAIN 'role[ceph-rgw]'"
+
+    for vm in $ceph_vms; do
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mon]'"
+      #do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-mds]'"
+      do_on_node ceph-bootstrap "$KNIFE node run_list set $vm.$BOOTSTRAP_DOMAIN 'role[ceph-osd]'"
+    done
+fi
 
 # generate actor map
 do_on_node ceph-bootstrap "cd \$HOME && $KNIFE actor map"
 # using the actor map, set ceph-bootstrap, ceph-*-vms (if any) as admins so that they can write into the data bag
 do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins ceph-bootstrap.$BOOTSTRAP_DOMAIN"  # && $KNIFE group add actor admins cos-vm1.$BOOTSTRAP_DOMAIN"
 
-for vm in $ceph_mon_vms $ceph_rgw_vms $ceph_osd_vms; do
-  do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins $vm.$BOOTSTRAP_DOMAIN"
-done
+if [[ CEPH_ARCHITECTURE != "converged"]]; then
+    for vm in $ceph_mon_vms $ceph_rgw_vms $ceph_osd_vms; do
+      do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins $vm.$BOOTSTRAP_DOMAIN"
+    done
 
-# run Chef on each node
-for vm in ceph-bootstrap $ceph_mon_vms $ceph_rgw_vms $ceph_osd_vms; do
-  do_on_node $vm "sudo chef-client"
-done
+    # run Chef on each node
+    for vm in ceph-bootstrap $ceph_mon_vms $ceph_rgw_vms $ceph_osd_vms; do
+      do_on_node $vm "sudo chef-client"
+    done
+else
+    for vm in $ceph_vms; do
+      do_on_node ceph-bootstrap "cd \$HOME && $KNIFE group add actor admins $vm.$BOOTSTRAP_DOMAIN"
+    done
+
+    # run Chef on each node
+    for vm in ceph-bootstrap $ceph_vms; do
+      do_on_node $vm "sudo chef-client"
+    done
+fi

@@ -63,7 +63,14 @@ fi
 export CEPH_OS=${CEPH_OS:-centos}
 # Change CEPH_VMS here if you want to (see above)
 export CEPH_VMS=all
+# Change this for larger memory machines. By default, too many VMs with Chef causes memory issues so a standard
+# Mac Book Pro with 16G of ram will not work on a non-converged architecture where everything is dedicated to it's
+# own VM. By default, the CEPH_ARCHITECTURE variable is set to 'converged'. Any other variable or if it's missing
+# will result in a non-converged architecture of the VMs.
+export CEPH_ARCHITECTURE=converged
 export CEPH_VM_DIR=${CEPH_VM_DIR:-$HOME/CEPH-VMs}
+
+# Bootstrap specific variables
 export BOOTSTRAP_SKIP_VMS=${BOOTSTRAP_SKIP_VMS:-0}
 export BOOTSTRAP_DOMAIN=${BOOTSTRAP_DOMAIN:-ceph.example.com}
 export BOOTSTRAP_CHEF_ENV=${BOOTSTRAP_CHEF_ENV:-Test-Laptop-Vagrant}
