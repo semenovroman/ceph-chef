@@ -60,13 +60,12 @@ when 'debian'
     default['ceph-chef']['mirror']['ubuntu-dist'] = ['trusty']
     # if you do specify a mirror, you can adjust the file path that comes
     # after the hostname in the URL here
-    default['ceph-chef']['bootstrap']['mirror_path'] = "/ubuntu"
+    default['ceph-chef']['chef-bootstrap']['mirror_path'] = "/ubuntu"
     #
     # worked example for the columbia mirror mentioned above which has a
     # non-standard path
-    #default['ceph-chef']['bootstrap']['mirror']      = "mirror.cc.columbia.edu"
-    #default['ceph-chef']['bootstrap']['mirror_path'] = "/pub/linux/ubuntu/archive"
-
+    #default['ceph-chef']['chef-bootstrap']['mirror']      = "mirror.cc.columbia.edu"
+    #default['ceph-chef']['chef-bootstrap']['mirror_path'] = "/pub/linux/ubuntu/archive"
 when 'rhel'
     default['ceph-chef']['os']['version'] = 'rhel7.1'  # centos-7.1 for CentOS
     # The default for Redhat. The default for CentOS is el7 and is overridden in the environment json file.
@@ -75,7 +74,6 @@ when 'rhel'
     # Only for individual rpms... Default yum repo has latest 'ceph'
     default['ceph-chef']['ceph']['repo']['os'] = "el7"  # el7 for CentOS or rhel7 for RHEL
     default['ceph-chef']['repos']['ceph'] = "http://ceph.com/rpm-hammer"
-
 end
 
 ###########################################
@@ -224,11 +222,11 @@ default['ceph-chef']['cpupower']['ondemand_up_threshold'] = nil
 
 ###########################################
 #
-# defaults for the bootstrap settings
+# defaults for the chef-bootstrap settings
 #
 ###########################################
 #
 # A value of nil means to let the Ubuntu installer work it out - it
 # will try to find the nearest one. However the selected mirror is
 # often slow.
-default['ceph-chef']['bootstrap']['mirror'] = nil
+default['ceph-chef']['chef-bootstrap']['mirror'] = nil

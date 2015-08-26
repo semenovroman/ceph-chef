@@ -122,7 +122,7 @@ do_on_node ceph-bootstrap "sudo yum update"
 
 # upload all cookbooks, roles and our chosen environment to the Chef server
 # (cookbook upload uses the cookbook_path set when configuring knife on the ceph-bootstrap node)
-do_on_node ceph-bootstrap "$KNIFE cookbook upload chef-client ceph cron logrotate ntp yum"
+do_on_node ceph-bootstrap "$KNIFE cookbook upload chef-client ceph ceph-chef cron logrotate ntp yum"
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/roles && $KNIFE role from file *.json"
 do_on_node ceph-bootstrap "cd \$HOME/ceph-chef/environments && $KNIFE environment from file $BOOTSTRAP_CHEF_ENV.json"
 
