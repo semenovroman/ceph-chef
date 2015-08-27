@@ -127,7 +127,7 @@ def get_mon_nodes
 end
 
 def get_bootstrap_node
-    results = search(:node, "role:bootstrap AND chef_environment:#{node.chef_environment}")
+    results = search(:node, "role:ceph-bootstrap AND chef_environment:#{node.chef_environment}")
     raise 'There is not exactly one bootstrap node found.' if results.size != 1
     results.first
 end

@@ -12,5 +12,5 @@ platforms:
 suites:
   - name: default
     run_list:
-      - recipe[ceph-helpers::default]
+      - recipe[ceph-chef::default]
     attributes:

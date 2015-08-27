@@ -20,16 +20,16 @@
 
 # This recipe sets up ceph monitor configuration information needed by the ceph cookbook recipes
 node['ceph']['config']['fsid'] = ceph_keygen()
-node['ceph']['config]'['global']['public network'] = default['ceph-chef']['storage-frontend']['cidr']
-node['ceph']['config]'['global']['cluster network'] = default['ceph-chef']['storage-backend']['cidr']
+node['ceph']['config']['global']['public network'] = default['ceph-chef']['storage-frontend']['cidr']
+node['ceph']['config']['global']['cluster network'] = default['ceph-chef']['storage-backend']['cidr']
 
 # Change these later - just here for testing...
-node['ceph']['config]'['global']['osd pool default pg num'] = 128
-node['ceph']['config]'['global']['osd pool default pgp num'] = 128
-node['ceph']['config]'['global']['osd pool default size'] = 2
-node['ceph']['config]'['global']['osd pool default min size'] = 1
-node['ceph']['config]'['global']['osd pool default crush rule'] = 0
-node['ceph']['config]'['global']['mon pg warn max per osd']=0
-node['ceph']['config]'['global']['mon osd full ratio']=.85
-node['ceph']['config]'['global']['mon osd nearfull ratio']=.70
-node['ceph']['config]'['global']['osd backfill full ratio']=.70
+node['ceph']['config']['global']['osd pool default pg num']=128
+node['ceph']['config']['global']['osd pool default pgp num']=128
+node['ceph']['config']['global']['osd pool default size']=2
+node['ceph']['config']['global']['osd pool default min size']=1
+node['ceph']['config']['global']['osd pool default crush rule']=0
+node['ceph']['config']['global']['mon pg warn max per osd']=0
+node['ceph']['config']['global']['mon osd full ratio']=.85
+node['ceph']['config']['global']['mon osd nearfull ratio']=.70
+node['ceph']['config']['global']['osd backfill full ratio']=.70

@@ -99,8 +99,8 @@ default['ceph-chef']['radosgw']['cache_max_file_size'] = 20000000
 #  Host-specific defaults for the cluster
 #
 ###########################################
-default['ceph-chef']['ceph']['osd_hdd_devices'] = [{"device": "sdb"},{"device": "sdc"}]
-default['ceph-chef']['ceph']['osd_ssd_devices'] = [{"device": "sdd"}, {"device": "sde"}]
+default['ceph-chef']['ceph']['osd_hdd_devices'] = [{"device" => "sdb"},{"device" => "sdc"}]
+default['ceph-chef']['ceph']['osd_ssd_devices'] = [{"device" => "sdd"}, {"device" => "sde"}]
 default['ceph-chef']['ceph']['enabled_pools'] = ["ssd", "hdd"]
 
 # rhel 7+ uses consistent naming interface names by default.
