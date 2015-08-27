@@ -19,6 +19,6 @@
 #
 
 # This recipe sets up ceph rgw configuration information needed by the ceph cookbook recipes
-node['ceph']['config]'['global']['rgw dns name'] = default['ceph-chef']['domain_name']
+node['ceph']['config']['global']['rgw dns name'] = default['ceph-chef']['domain_name']
 
 # Need to add osd_hdd_devices and osd_ssd_devices
